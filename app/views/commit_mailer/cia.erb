@@ -11,7 +11,7 @@
   <timestamp><%= @commit["timestamp"].to_i %></timestamp>
   <body>
     <commit>
-      <author><%= @commit["author"]["name"] %></author>
+      <author><%= author_name @commit["author"] %></author>
       <revision><%= @sha1[0..6] %></revision>
       <log><%= @commit["message"] %></log>
       <url><%= @commit["url"] %></url>

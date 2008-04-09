@@ -1,5 +1,7 @@
 class CommitMailer < ActionMailer::Base
 
+	helper :mailer
+
   def commit_notification(recipient, repo_name, commit_sha1, commit, branch)
     subject "[#{repo_name} commit] " + commit["message"].split("\n").first
     recipients recipient
