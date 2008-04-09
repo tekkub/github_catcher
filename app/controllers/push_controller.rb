@@ -1,26 +1,21 @@
 class PushController < ApplicationController
+	REPO_MIRRORS = {
+		"git://github.com/tekkub/tektest.git" => "git@github.com:tekkub/tektest_mirror.git",
+		"git://github.com/tekkub/tourguide.git" => "ssh://git@git.kergoth.com/srv/git/git.tekkub.net/TourGuide.git/",
+	}
+
 	def index
-		puts "\nIncoming push"
 		@payload = ActiveSupport::JSON.decode(params[:payload]) rescue nil
 
-		if @payload.blank?
-			#~ CommitMailer.deliver_cia(
-			#~ CommitMailer.deliver_commit_notification(
-				#~ "githubcatcher@tekkub.net",
-				#~ "tektest",
-				#~ "1f567e02299e134e8aeaa46592a8615f1d43db2a",
-				#~ {"message"=>"Testing crap\n\nNothing to see here!", "author"=>{"name"=>"Tekkub", "email"=>"tekkub@gmail.com"}, "url"=>"http://github.com/tekkub/tektest/commit/1f567e02299e134e8aeaa46592a8615f1d43db2a"},
-				#~ "master"
-			#~ )
-
-
-		else
+		unless @payload.blank?
 			github_repo = @payload["repository"]["url"].sub("http", "git") + ".git"
 			branch = @payload["ref"].sub("refs/heads/", "")
 			@payload["commits"].each_pair do |sha1,commit|
 				CommitMailer.deliver_commit_notification("githubcatcher@tekkub.net", @payload["repository"]["name"], sha1, commit, branch)
 				CommitMailer.deliver_cia(@payload["repository"]["name"], sha1, commit, branch)
 			end
+
+			clone(github_repo, REPO_MIRRORS[github_repo], branch) if REPO_MIRRORS[github_repo]
 		end
 
 		render :text => "Nothing to see here!"
@@ -29,27 +24,35 @@ class PushController < ApplicationController
 	private
 
 	def clone(source_repo, dest_repo, branch)
-		if repo = params[:id]
-			local_path = "/home/tekkub/temp/github_#{repo}"
-			if !File.exist?(local_path)
-				puts "\n---Cloning #{repo}\n"
-				#~ system "echo 'Cloning from github:#{github_repo} to local:#{repo}' >> /home/tekkub/temp/githubcatcher.log"
-				#~ system "cd /home/tekkub/temp && git clone git://github.com/tekkub/#{github_repo}.git github_#{repo}"
-				#~ puts "\n---Add remote\n"
-				#~ system "cd /home/tekkub/temp/github_#{repo} && git remote add mirror ssh://git@git.kergoth.com/srv/git/git.tekkub.net/#{repo}.git/"
-			end
-			#~ puts "\n---Pull #{repo}\n"
-			#~ system "cd /home/tekkub/temp/github_#{repo} && git pull"
-			#~ system "cd /home/tekkub/temp/github_#{repo} && git pull mirror"
-			#~ system "echo 'Mirroring from github:#{github_repo} to #{repo}' >> /home/tekkub/temp/githubcatcher.log"
-			#~ puts "\n---Push #{repo}\n"
-			#~ system "cd /home/tekkub/temp/github_#{repo} && git push --force --all mirror"
+		local_repo = "github_mirror_#{source_repo.hash}"
+		local_path = "/home/tekkub/temp/#{local_repo}"
 
-			puts "\n---Finished #{github_repo} --> #{repo}\n"
-			render :text => "Pushed github repo '#{github_repo}' to mirror repo '#{repo}'"
-		else
-			render :text => "Nothing to see here!"
+		if !File.exist?(local_path)
+			puts "\n---Cloning #{source_repo}\n"
+			#~ system "echo 'Cloning from github:#{github_repo} to local:#{repo}' >> /home/tekkub/temp/githubcatcher.log"
+			#~ system "cd /home/tekkub/temp && git clone --bare #{source_repo} #{local_repo}"
+			system "cd /home/tekkub/temp && git clone #{source_repo} #{local_repo}"
+			puts "\n---Add remote\n"
+			#~ system "cd #{local_path} && git remote add github #{dest_repo}"
+			system "cd #{local_path} && git remote add mirror #{dest_repo}"
 		end
+
+		branches = IO.popen("cd #{local_path} && git branch -r").readlines
+		branches << "origin/#{branch}"
+		branches = branches.uniq.map {|l| l.strip.split("/")}.reject! {|l| l[0] == "mirror" || l[1] == "HEAD"}.map {|l| "+#{l[1]}:#{l[1]}"}
+		p "git pull origin " + branches.join(" ")
+
+		puts "\n---Pull #{source_repo} #{branch}\n"
+		system "cd #{local_path} && git pull origin #{branches.join(" ")}"
+		#~ system "cd #{local_path} && git pull origin"
+		#~ system "cd #{local_path} && git pull mirror"
+		#~ system "cd #{local_path} && git branch -f temp remotes/github/#{branch}"
+		#~ system "echo 'Mirroring from github:#{github_repo} to #{repo}' >> /home/tekkub/temp/githubcatcher.log"
+		puts "\n---Push #{dest_repo} #{branch}\n"
+		#~ system "cd #{local_path} && git push --tags --force mirror temp:#{branch}"
+		system "cd #{local_path} && git push --mirror mirror"
+
+		puts "\n---Finished #{source_repo} --> #{dest_repo}\n"
 	end
 
 end
