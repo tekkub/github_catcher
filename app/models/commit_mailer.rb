@@ -4,7 +4,6 @@ class CommitMailer < ActionMailer::Base
     subject "[#{repo_name} commit] " + commit["message"].split("\n").first
     recipients recipient
     from 'github-commits@tekkub.net'
-    #~ content_type "text/html"
     body :commit => commit, :branch => branch
   end
 

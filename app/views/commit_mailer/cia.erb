@@ -8,14 +8,12 @@
     <project><%= @source %></project>
     <branch><%= @branch %></branch>
   </source>
-  <timestamp><%= @commit["timestamp"] %></timestamp>
+  <timestamp><%= @commit["timestamp"].to_i %></timestamp>
   <body>
     <commit>
       <author><%= @commit["author"]["name"] %></author>
       <revision><%= @sha1[0..6] %></revision>
-      <log>
-<%= @commit["message"] %>
-			</log>
+      <log><%= @commit["message"] %></log>
       <url><%= @commit["url"] %></url>
     </commit>
   </body>
