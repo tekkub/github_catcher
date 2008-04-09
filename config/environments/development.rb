@@ -19,3 +19,6 @@ config.action_view.debug_rjs                         = true
 
 # Don't care if the mailer can't send
 config.action_mailer.raise_delivery_errors = false
+
+# Don't want you people that pulled this from git to know my top secret mail server password!
+require File.join(File.dirname(__FILE__), 'mail')

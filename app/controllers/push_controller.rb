@@ -1,19 +1,26 @@
-
 class PushController < ApplicationController
 	def index
 		puts "\nIncoming push"
 		@payload = ActiveSupport::JSON.decode(params[:payload]) rescue nil
 
 		if @payload.blank?
+			#~ CommitMailer.deliver_cia(
+			#~ CommitMailer.deliver_commit_notification(
+				#~ "githubcatcher@tekkub.net",
+				#~ "tektest",
+				#~ "1f567e02299e134e8aeaa46592a8615f1d43db2a",
+				#~ {"message"=>"Testing crap\n\nNothing to see here!", "author"=>{"name"=>"Tekkub", "email"=>"tekkub@gmail.com"}, "url"=>"http://github.com/tekkub/tektest/commit/1f567e02299e134e8aeaa46592a8615f1d43db2a"},
+				#~ "master"
+			#~ )
+
 
 		else
-			p @payload
-
-			github_repo = @payload.repository.url.sub("http", "git") + ".git"
-			p github_repo
-
-			branch = @payload.ref.sub("refs/heads/", "")
-			p branch
+			github_repo = @payload["repository"]["url"].sub("http", "git") + ".git"
+			branch = @payload["ref"].sub("refs/heads/", "")
+			@payload["commits"].each_pair do |sha1,commit|
+				CommitMailer.deliver_commit_notification("githubcatcher@tekkub.net", @payload["repository"]["name"], sha1, commit, branch)
+				CommitMailer.deliver_cia(@payload["repository"]["name"], sha1, commit, branch)
+			end
 		end
 
 		render :text => "Nothing to see here!"

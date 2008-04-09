@@ -1,0 +1,22 @@
+<message>
+  <generator>
+    <name>github catcher</name>
+    <version>1</version>
+    <url>http://www.tekkub.net</url>
+  </generator>
+  <source>
+    <project><%= @source %></project>
+    <branch><%= @branch %></branch>
+  </source>
+  <timestamp><%= @commit["timestamp"] %></timestamp>
+  <body>
+    <commit>
+      <author><%= @commit["author"]["name"] %></author>
+      <revision><%= @sha1[0..6] %></revision>
+      <log>
+<%= @commit["message"] %>
+			</log>
+      <url><%= @commit["url"] %></url>
+    </commit>
+  </body>
+</message>
