@@ -28,31 +28,16 @@ class PushController < ApplicationController
 		local_path = "/home/tekkub/temp/#{local_repo}"
 
 		if !File.exist?(local_path)
-			puts "\n---Cloning #{source_repo}\n"
-			#~ system "echo 'Cloning from github:#{github_repo} to local:#{repo}' >> /home/tekkub/temp/githubcatcher.log"
-			#~ system "cd /home/tekkub/temp && git clone --bare #{source_repo} #{local_repo}"
-			system "cd /home/tekkub/temp && git clone #{source_repo} #{local_repo}"
-			puts "\n---Add remote\n"
-			#~ system "cd #{local_path} && git remote add github #{dest_repo}"
-			system "cd #{local_path} && git remote add mirror #{dest_repo}"
+			system "cd /home/tekkub/temp && mkdir #{local_repo}"
+			system "cd #{local_path} && git-init"
+			system "cd #{local_path} && git-config core.bare true"
+			system "cd #{local_path} && git-remote add --mirror -f origin #{source_repo}"
+			system "cd #{local_path} && git-remote add -f mirror #{dest_repo}"
 		end
 
-		branches = IO.popen("cd #{local_path} && git branch -r").readlines
-		branches << "origin/#{branch}"
-		branches = branches.uniq.map {|l| l.strip.split("/")}.reject! {|l| l[0] == "mirror" || l[1] == "HEAD"}.map {|l| "+#{l[1]}:#{l[1]}"}
-		p "git pull origin " + branches.join(" ")
-
-		puts "\n---Pull #{source_repo} #{branch}\n"
-		system "cd #{local_path} && git pull origin #{branches.join(" ")}"
-		#~ system "cd #{local_path} && git pull origin"
-		#~ system "cd #{local_path} && git pull mirror"
-		#~ system "cd #{local_path} && git branch -f temp remotes/github/#{branch}"
-		#~ system "echo 'Mirroring from github:#{github_repo} to #{repo}' >> /home/tekkub/temp/githubcatcher.log"
-		puts "\n---Push #{dest_repo} #{branch}\n"
-		#~ system "cd #{local_path} && git push --tags --force mirror temp:#{branch}"
-		system "cd #{local_path} && git push --mirror mirror"
-
-		puts "\n---Finished #{source_repo} --> #{dest_repo}\n"
+		system "cd #{local_path} && git-fetch origin"
+		system "cd #{local_path} && git-fetch mirror"
+		system "cd #{local_path} && git-push --mirror mirror"
 	end
 
 end
